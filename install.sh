@@ -2,7 +2,7 @@
 # Evan Widloski - 2019-03-21
 # Modified Entware installer from http://bin.entware.net/armv7sf-k3.2/installer/generic.sh
 
-set -e
+set -ex
 cleanup() {
     echo "Encountered error.  Cleaning up and quitting..."
     # get out of /opt so it can be unmounted
@@ -49,22 +49,21 @@ else
 fi
 
 # create systemd mount unit to mount over /opt on reboot
-cat >/etc/systemd/system/opt.mount <<EOF
-[Unit]
-Description=Bind mount over /opt to give entware more space
-DefaultDependencies=no
-Conflicts=umount.target
-Before=local-fs.target umount.target
+echo "[Unit]" > /etc/systemd/system/opt.mount
+echo "Description=Bind mount over /opt to give entware more space" >> /etc/systemd/system/opt.mount
+echo "DefaultDependencies=no" >> /etc/systemd/system/opt.mount
+echo "Conflicts=umount.target" >> /etc/systemd/system/opt.mount
+echo "Before=local-fs.target umount.target" >> /etc/systemd/system/opt.mount
+echo "" >> /etc/systemd/system/opt.mount
+echo "[Mount]" >> /etc/systemd/system/opt.mount
+echo "What=/home/root/.entware" >> /etc/systemd/system/opt.mount
+echo "Where=/opt" >> /etc/systemd/system/opt.mount
+echo "Type=none" >> /etc/systemd/system/opt.mount
+echo "Options=bind" >> /etc/systemd/system/opt.mount
+echo "" >> /etc/systemd/system/opt.mount
+echo "[Install]" >> /etc/systemd/system/opt.mount
+echo "WantedBy=local-fs.target" >> /etc/systemd/system/opt.mount
 
-[Mount]
-What=/home/root/.entware
-Where=/opt
-Type=none
-Options=bind
-
-[Install]
-WantedBy=local-fs.target
-EOF
 systemctl daemon-reload
 systemctl enable opt.mount
 
@@ -109,12 +108,14 @@ ln -s ld-2.27.so $DLOADER
 ln -s libc-2.27.so libc.so.6
 ln -s libpthread-2.27.so libpthread.so.0
 
-echo 'src/gz toltec https://toltec.delab.re/stable' >> /opt/etc/opkg.conf
-
 /opt/bin/opkg update
-/opt/bin/opkg install entware-opt wget ca-certificates
+/opt/bin/opkg install entware-opt wget wget-ssl ca-certificates
+
+echo 'src/gz toltec https://toltec-dev.org/stable' >> /opt/etc/opkg.conf
 
 sed -i 's|http://|https://|g' /opt/etc/opkg.conf
+
+/opt/bin/opkg update
 
 # Fix for multiuser environment
 chmod 777 /opt/tmp
